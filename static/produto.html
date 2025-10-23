@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Controle de Estoque</h1>
+            <h1>📦 Controle de Estoque</h1>
             <p>Gerencie seus produtos de forma simples e eficiente</p>
         </header>
 
@@ -20,37 +20,48 @@
                     <input type="text" id="nome" placeholder="Nome do produto" required>
                 </div>
                 <div class="form-group">
-                    <input type="number" id="quantidade" placeholder="Quantidade" min="0" required>
+                    <input type="number" id="quantidade" placeholder="Quantidade em estoque" min="0" required>
                 </div>
                 <div class="form-group">
                     <button type="submit" id="submit-btn">Adicionar Produto</button>
-                    <button type="button" id="cancel-btn" class="cancel-btn" style="display: none;">Cancelar</button>
+                    <button type="button" id="cancel-btn" class="cancel-btn" style="display: none;">Cancelar Edição</button>
                 </div>
             </form>
         </section>
 
         <section class="produtos-section">
             <h2>Produtos em Estoque</h2>
-            <div id="loading-message" class="loading">Carregando produtos...</div>
+            
+            <div id="loading-message" class="loading">
+                <div class="spinner"></div>
+                <p>Carregando produtos...</p>
+            </div>
+            
             <div id="empty-message" class="empty-state" style="display: none;">
-                <p>Nenhum produto cadastrado. Adicione seu primeiro produto acima!</p>
+                <p>📭 Nenhum produto cadastrado.</p>
+                <p>Adicione seu primeiro produto acima!</p>
             </div>
+            
             <div id="error-message" class="error-state" style="display: none;">
-                <p>Erro ao carregar produtos. Tente recarregar a página.</p>
+                <p>❌ Erro ao carregar produtos.</p>
+                <button onclick="carregarProdutos()" class="btn-retry">Tentar Novamente</button>
             </div>
-            <table id="produtos-table" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th>Quantidade</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="produtos-tbody">
-                    <!-- Produtos serão inseridos aqui via JavaScript -->
-                </tbody>
-            </table>
+            
+            <div class="table-container">
+                <table id="produtos-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome do Produto</th>
+                            <th>Quantidade</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="produtos-tbody">
+                        <!-- Produtos serão inseridos aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </section>
     </div>
 
