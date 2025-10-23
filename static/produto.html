@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle de Estoque</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Controle de Estoque</h1>
+            <p>Gerencie seus produtos de forma simples e eficiente</p>
+        </header>
+
+        <section class="form-section">
+            <h2 id="form-title">Adicionar Novo Produto</h2>
+            <form id="produto-form">
+                <div class="form-group">
+                    <input type="text" id="nome" placeholder="Nome do produto" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="quantidade" placeholder="Quantidade" min="0" required>
+                </div>
+                <div class="form-group">
+                    <button type="submit" id="submit-btn">Adicionar Produto</button>
+                    <button type="button" id="cancel-btn" class="cancel-btn" style="display: none;">Cancelar</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="produtos-section">
+            <h2>Produtos em Estoque</h2>
+            <div id="loading-message" class="loading">Carregando produtos...</div>
+            <div id="empty-message" class="empty-state" style="display: none;">
+                <p>Nenhum produto cadastrado. Adicione seu primeiro produto acima!</p>
+            </div>
+            <div id="error-message" class="error-state" style="display: none;">
+                <p>Erro ao carregar produtos. Tente recarregar a página.</p>
+            </div>
+            <table id="produtos-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Quantidade</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="produtos-tbody">
+                    <!-- Produtos serão inseridos aqui via JavaScript -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+        <script src="java.js"></script>
+    </body>
+</html>
