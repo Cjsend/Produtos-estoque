@@ -1,70 +1,96 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Controle de Estoque</title>
-    <link rel="stylesheet" href="style.css">
+  <!-- define codificação e título -->
+  <meta charset="UTF-8">
+  <title>Cadastro de Produtos</title>
+  <!-- link para o CSS na pasta static -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📦 Controle de Estoque</h1>
-            <p>Gerencie seus produtos de forma simples e eficiente</p>
-        </header>
+  <!-- título da página -->
+  <h1>🛒 Cadastro de Produtos</h1>
 
-        <section class="form-section">
-            <h2 id="form-title">Adicionar Novo Produto</h2>
-            <form id="produto-form">
-                <div class="form-group">
-                    <input type="text" id="nome" placeholder="Nome do produto" required>
-                </div>
-                <div class="form-group">
-                    <input type="number" id="quantidade" placeholder="Quantidade em estoque" min="0" required>
-                </div>
-                <div class="form-group">
-                    <button type="submit" id="submit-btn">Adicionar Produto</button>
-                    <button type="button" id="cancel-btn" class="cancel-btn" style="display: none;">Cancelar Edição</button>
-                </div>
-            </form>
-        </section>
+  <!-- formulário para cadastrar produtos
+       enctype="multipart/form-data" é necessário para enviar arquivos (input type=file) -->
+  <form id="form-produto" enctype="multipart/form-data">
+    <!-- campo nome -->
+    <input type="text" name="nome" placeholder="Nome do produto" required>
+    <!-- campo preço (número com duas casas) -->
+    <input type="number" name="preco" placeholder="Preço" step="0.01" required>
+    <!-- campo descrição -->
+    <textarea name="descricao" placeholder="Descrição"></textarea>
 
-        <section class="produtos-section">
-            <h2>Produtos em Estoque</h2>
-            
-            <div id="loading-message" class="loading">
-                <div class="spinner"></div>
-                <p>Carregando produtos...</p>
-            </div>
-            
-            <div id="empty-message" class="empty-state" style="display: none;">
-                <p>📭 Nenhum produto cadastrado.</p>
-                <p>Adicione seu primeiro produto acima!</p>
-            </div>
-            
-            <div id="error-message" class="error-state" style="display: none;">
-                <p>❌ Erro ao carregar produtos.</p>
-                <button onclick="carregarProdutos()" class="btn-retry">Tentar Novamente</button>
-            </div>
-            
-            <div class="table-container">
-                <table id="produtos-table" style="display: none;">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nome do Produto</th>
-                            <th>Quantidade</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="produtos-tbody">
-                        <!-- Produtos serão inseridos aqui via JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </div>
+    <!-- input para upload de arquivo local -->
+    <label>Imagem (upload local):</label>
+    <input type="file" name="imagem_arquivo" accept="image/*">
 
-        <script src="java.js"></script>
-    </body>
+    <!-- alternativa: inserir URL da imagem -->
+    <label>Ou imagem por URL:</label>
+    <input type="text" name="imagem_url" placeholder="https://exemplo.com/imagem.jpg">
+
+    <!-- botão de enviar -->
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <h2>Lista de Produtos</h2>
+  <!-- container onde os cards de produto serão inseridos dinamicamente -->
+  <div id="lista"></div>
+
+  <script>
+    // pega referências a elementos do DOM
+    const form = document.getElementById('form-produto');
+    const lista = document.getElementById('lista');
+
+    // função que busca produtos do back-end e renderiza na página
+    async function carregarProdutos() {
+      // chama a rota GET /produtos
+      const res = await fetch('/produtos');
+      // convierte resposta em JSON (array de produtos)
+      const produtos = await res.json();
+
+      // monta o HTML dos cards a partir do array de produtos
+      lista.innerHTML = produtos.map(p => `
+        <div class="card">
+          <!-- exibe a imagem; se p.imagem for null/undefined usa placeholder -->
+          <img src="${p.imagem || 'https://via.placeholder.com/150'}" alt="produto">
+          <h3>${p.nome}</h3>
+          <!-- mostra o preço — nota: aqui não formatamos casas decimais -->
+          <p>R$ ${p.preco}</p>
+          <p>${p.descricao || ''}</p>
+          <!-- botão excluir chama função excluir passando o id -->
+          <button onclick="excluir(${p.id})">Excluir</button>
+        </div>
+      `).join(''); // join para transformar array de strings em uma string só
+    }
+
+    // listener para submissão do formulário
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); // evita que o formulário recarregue a página
+
+      // FormData permite enviar texto + arquivos no mesmo request
+      const dados = new FormData(form);
+
+      // faz POST para /produtos com o body sendo o FormData
+      await fetch('/produtos', { method: 'POST', body: dados });
+
+      // limpa o formulário
+      form.reset();
+
+      // recarrega a lista para mostrar o novo produto
+      carregarProdutos();
+    });
+
+    // função que deleta o produto por id
+    async function excluir(id) {
+      // chamada DELETE para /produtos/:id
+      await fetch(`/produtos/${id}`, { method: 'DELETE' });
+      // atualiza lista
+      carregarProdutos();
+    }
+
+    // carrega os produtos ao abrir a página
+    carregarProdutos();
+  </script>
+</body>
 </html>
