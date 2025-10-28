@@ -1,275 +1,207 @@
-// URL da API - usando localStorage para simular uma "API"
-        const API_BASE = 'produtos';
-        let editandoId = null;
+let editandoId = null;
 
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar dados se não existirem
-            if (!localStorage.getItem(API_BASE)) {
-                localStorage.setItem(API_BASE, JSON.stringify([]));
-            }
-            
-            carregarProdutos();
-            
-            // Configurar o formulário
-            document.getElementById('produto-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (editandoId) {
-                    atualizarProduto(editandoId);
-                } else {
-                    adicionarProduto();
-                }
-            });
-            
-            // Configurar botão cancelar
-            document.getElementById('cancel-btn').addEventListener('click', function() {
-                cancelarEdicao();
-            });
-        });
-
-        // Funções para simular API usando localStorage
-        function getProdutos() {
-            return JSON.parse(localStorage.getItem(API_BASE) || '[]');
-        }
-
-        function salvarProdutos(produtos) {
-            localStorage.setItem(API_BASE, JSON.stringify(produtos));
-        }
-
-        // Carregar produtos
+        // Função para carregar produtos do servidor
         async function carregarProdutos() {
             try {
-                mostrarEstado('loading');
+                document.getElementById('loading-message').style.display = 'block';
+                document.getElementById('empty-message').style.display = 'none';
+                document.getElementById('error-message').style.display = 'none';
+                document.getElementById('produtos-container').innerHTML = '';
                 
-                // Simular delay de rede
-                await new Promise(resolve => setTimeout(resolve, 500));
+                const response = await fetch('/produtos');
                 
-                const produtos = getProdutos();
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar produtos');
+                }
+                
+                const produtos = await response.json();
+                
+                document.getElementById('loading-message').style.display = 'none';
                 
                 if (produtos.length === 0) {
-                    mostrarEstado('empty');
+                    document.getElementById('empty-message').style.display = 'block';
                 } else {
-                    mostrarEstado('table');
                     renderizarProdutos(produtos);
                 }
             } catch (error) {
                 console.error('Erro:', error);
-                mostrarEstado('error');
+                document.getElementById('loading-message').style.display = 'none';
+                document.getElementById('error-message').style.display = 'block';
             }
         }
 
-        // Renderizar produtos na tabela
+        // Função para renderizar produtos
         function renderizarProdutos(produtos) {
-            const tbody = document.getElementById('produtos-tbody');
-            tbody.innerHTML = '';
+            const container = document.getElementById('produtos-container');
+            container.innerHTML = '';
             
             produtos.forEach(produto => {
-                const tr = document.createElement('tr');
-                
-                tr.innerHTML = `
-                    <td>${produto.id}</td>
-                    <td>${produto.nome}</td>
-                    <td>${produto.quantidade}</td>
-                    <td>
-                        <button class="btn-editar" onclick="iniciarEdicao(${produto.id}, '${produto.nome.replace(/'/g, "\\'")}', ${produto.quantidade})">Editar</button>
-                        <button class="btn-excluir" onclick="excluirProduto(${produto.id})">Excluir</button>
-                    </td>
+                const card = document.createElement('div');
+                card.className = 'produto-card';
+                card.innerHTML = `
+                    <img src="${produto.imagem || 'https://via.placeholder.com/300x150/2d2d42/9d4edd?text=Sem+Imagem'}" alt="${produto.nome}">
+                    <div class="produto-body">
+                        <h3 class="produto-nome">${produto.nome}</h3>
+                        <p class="produto-preco">R$ ${parseFloat(produto.preco).toFixed(2)}</p>
+                        <p class="produto-desc">${produto.descricao || 'Sem descrição'}</p>
+                        <div class="produto-actions">
+                            <button class="btn-editar" onclick="editarProduto(${produto.id})">Editar</button>
+                            <button class="btn-excluir" onclick="excluirProduto(${produto.id})">Excluir</button>
+                        </div>
+                    </div>
                 `;
-                
-                tbody.appendChild(tr);
+                container.appendChild(card);
             });
         }
 
-        // Adicionar novo produto
-        async function adicionarProduto() {
-            const nome = document.getElementById('nome').value.trim();
-            const quantidade = parseInt(document.getElementById('quantidade').value);
+        // Função para adicionar/editar produto
+        document.getElementById('produto-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (!nome || isNaN(quantidade) || quantidade < 0) {
-                alert('Por favor, preencha todos os campos corretamente.');
-                return;
-            }
-            
-            try {
-                const produtos = getProdutos();
-                
-                // Gerar novo ID
-                const novoId = produtos.length > 0 ? Math.max(...produtos.map(p => p.id)) + 1 : 1;
-                
-                // Adicionar novo produto
-                const novoProduto = {
-                    id: novoId,
-                    nome: nome,
-                    quantidade: quantidade
-                };
-                
-                produtos.push(novoProduto);
-                salvarProdutos(produtos);
-                
-                // Limpar formulário e recarregar produtos
-                document.getElementById('produto-form').reset();
-                carregarProdutos();
-                
-                // Feedback visual
-                mostrarMensagem('Produto adicionado com sucesso!', 'success');
-            } catch (error) {
-                console.error('Erro:', error);
-                mostrarMensagem('Erro ao adicionar produto.', 'error');
-            }
-        }
-
-        // Iniciar edição de produto
-        function iniciarEdicao(id, nome, quantidade) {
-            editandoId = id;
-            
-            // Preencher formulário com dados do produto
-            document.getElementById('nome').value = nome;
-            document.getElementById('quantidade').value = quantidade;
-            
-            // Alterar interface para modo edição
-            document.getElementById('form-title').textContent = 'Editando Produto';
-            document.getElementById('submit-btn').textContent = 'Atualizar Produto';
-            document.getElementById('cancel-btn').style.display = 'inline-block';
-            
-            // Rolagem suave para o formulário
-            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Atualizar produto
-        async function atualizarProduto(id) {
-            const nome = document.getElementById('nome').value.trim();
-            const quantidade = parseInt(document.getElementById('quantidade').value);
-            
-            if (!nome || isNaN(quantidade) || quantidade < 0) {
-                alert('Por favor, preencha todos os campos corretamente.');
-                return;
-            }
+            const nome = document.getElementById('nome').value;
+            const preco = parseFloat(document.getElementById('preco').value);
+            const descricao = document.getElementById('descricao').value;
+            const imagem = document.getElementById('imagem').value;
             
             try {
-                const produtos = getProdutos();
-                
-                // Encontrar e atualizar produto
-                const produtoIndex = produtos.findIndex(p => p.id === id);
-                if (produtoIndex !== -1) {
-                    produtos[produtoIndex] = {
-                        id: id,
-                        nome: nome,
-                        quantidade: quantidade
-                    };
+                if (editandoId) {
+                    // Editar produto existente
+                    const response = await fetch(`/produtos/${editandoId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            nome,
+                            preco,
+                            descricao,
+                            imagem
+                        })
+                    });
                     
-                    salvarProdutos(produtos);
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Erro ao atualizar produto');
+                    }
                     
-                    // Limpar formulário e recarregar produtos
-                    cancelarEdicao();
-                    carregarProdutos();
-                    
-                    // Feedback visual
                     mostrarMensagem('Produto atualizado com sucesso!', 'success');
+                    editandoId = null;
+                    document.getElementById('form-title').textContent = 'Adicionar Novo Produto';
+                    document.getElementById('submit-btn').textContent = 'Adicionar Produto';
+                    document.getElementById('cancel-btn').style.display = 'none';
                 } else {
-                    throw new Error('Produto não encontrado');
+                    // Adicionar novo produto
+                    const response = await fetch('/produtos', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            nome,
+                            preco,
+                            descricao,
+                            imagem
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Erro ao adicionar produto');
+                    }
+                    
+                    mostrarMensagem('Produto adicionado com sucesso!', 'success');
                 }
-            } catch (error) {
-                console.error('Erro:', error);
-                mostrarMensagem('Erro ao atualizar produto.', 'error');
-            }
-        }
-
-        // Cancelar edição
-        function cancelarEdicao() {
-            editandoId = null;
-            
-            // Limpar formulário
-            document.getElementById('produto-form').reset();
-            
-            // Restaurar interface para modo adição
-            document.getElementById('form-title').textContent = 'Adicionar Novo Produto';
-            document.getElementById('submit-btn').textContent = 'Adicionar Produto';
-            document.getElementById('cancel-btn').style.display = 'none';
-        }
-
-        // Excluir produto
-        async function excluirProduto(id) {
-            if (!confirm('Tem certeza que deseja excluir este produto?')) {
-                return;
-            }
-            
-            try {
-                const produtos = getProdutos();
                 
-                // Filtrar produto a ser excluído
-                const produtosAtualizados = produtos.filter(p => p.id !== id);
-                
-                salvarProdutos(produtosAtualizados);
+                // Limpar formulário
+                document.getElementById('produto-form').reset();
                 
                 // Recarregar produtos
                 carregarProdutos();
                 
-                // Feedback visual
-                mostrarMensagem('Produto excluído com sucesso!', 'success');
             } catch (error) {
                 console.error('Erro:', error);
-                mostrarMensagem('Erro ao excluir produto.', 'error');
+                mostrarMensagem(error.message, 'error');
+            }
+        });
+
+        // Função para editar produto
+        async function editarProduto(id) {
+            try {
+                const response = await fetch(`/produtos/${id}`);
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar produto');
+                }
+                
+                const produto = await response.json();
+                
+                document.getElementById('nome').value = produto.nome;
+                document.getElementById('preco').value = produto.preco;
+                document.getElementById('descricao').value = produto.descricao || '';
+                document.getElementById('imagem').value = produto.imagem || '';
+                
+                editandoId = id;
+                document.getElementById('form-title').textContent = 'Editar Produto';
+                document.getElementById('submit-btn').textContent = 'Atualizar Produto';
+                document.getElementById('cancel-btn').style.display = 'inline-block';
+                
+                // Scroll para o formulário
+                document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarMensagem('Erro ao carregar produto para edição', 'error');
             }
         }
 
-        // Controlar estados da interface
-        function mostrarEstado(estado) {
-            // Ocultar todos os estados
-            document.getElementById('loading-message').style.display = 'none';
-            document.getElementById('empty-message').style.display = 'none';
-            document.getElementById('error-message').style.display = 'none';
-            document.getElementById('produtos-table').style.display = 'none';
-            
-            // Mostrar estado solicitado
-            switch(estado) {
-                case 'loading':
-                    document.getElementById('loading-message').style.display = 'block';
-                    break;
-                case 'empty':
-                    document.getElementById('empty-message').style.display = 'block';
-                    break;
-                case 'error':
-                    document.getElementById('error-message').style.display = 'block';
-                    break;
-                case 'table':
-                    document.getElementById('produtos-table').style.display = 'table';
-                    break;
+        // Função para excluir produto
+        async function excluirProduto(id) {
+            if (confirm('Tem certeza que deseja excluir este produto?')) {
+                try {
+                    const response = await fetch(`/produtos/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Erro ao excluir produto');
+                    }
+                    
+                    mostrarMensagem('Produto excluído com sucesso!', 'success');
+                    carregarProdutos();
+                    
+                } catch (error) {
+                    console.error('Erro:', error);
+                    mostrarMensagem(error.message, 'error');
+                }
             }
         }
 
-        // Mostrar mensagem temporária
+        // Função para cancelar edição
+        document.getElementById('cancel-btn').addEventListener('click', function() {
+            editandoId = null;
+            document.getElementById('produto-form').reset();
+            document.getElementById('form-title').textContent = 'Adicionar Novo Produto';
+            document.getElementById('submit-btn').textContent = 'Adicionar Produto';
+            document.getElementById('cancel-btn').style.display = 'none';
+        });
+
+        // Função para mostrar mensagens
         function mostrarMensagem(mensagem, tipo) {
-            // Criar elemento de mensagem
-            const mensagemEl = document.createElement('div');
-            mensagemEl.textContent = mensagem;
-            mensagemEl.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 5px;
-                color: white;
-                font-weight: 600;
-                z-index: 1000;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                transition: opacity 0.3s;
-            `;
+            const flash = document.createElement('div');
+            flash.className = `flash-message ${tipo}`;
+            flash.textContent = mensagem;
+            document.body.appendChild(flash);
             
-            // Definir cor baseada no tipo
-            if (tipo === 'success') {
-                mensagemEl.style.backgroundColor = '#2ecc71';
-            } else {
-                mensagemEl.style.backgroundColor = '#e74c3c';
-            }
-            
-            // Adicionar ao DOM
-            document.body.appendChild(mensagemEl);
-            
-            // Remover após 3 segundos
             setTimeout(() => {
-                mensagemEl.style.opacity = '0';
+                flash.style.opacity = '0';
                 setTimeout(() => {
-                    document.body.removeChild(mensagemEl);
+                    document.body.removeChild(flash);
                 }, 300);
             }, 3000);
         }
+
+        // Inicializar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarProdutos();
+        });
